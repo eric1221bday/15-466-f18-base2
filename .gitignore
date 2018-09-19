@@ -10,3 +10,4 @@ kit-libs-osx
 kit-libs-linux
 .idea
 cmake-build-debug
+.vs
