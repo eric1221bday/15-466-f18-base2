@@ -6,12 +6,14 @@
 #include "GL.hpp"
 #include "Connection.hpp"
 #include "Game.hpp"
+#include "cereal/archives/binary.hpp"
 
 #include <SDL.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
 #include <vector>
+#include <sstream>
 
 // The 'GameMode' mode is the main gameplay mode:
 
@@ -33,6 +35,7 @@ struct GameMode: public Mode
 
     //------- game state -------
     Game state;
+    int8_t player_id = -1;
 
     //------ networking ------
     Client &client; //client object; manages connection to server.

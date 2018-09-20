@@ -1,4 +1,5 @@
-//Mode.hpp declares the "Mode::current" static member variable, which is used to decide where event-handling, updating, and drawing events go:
+//Mode.hpp declares the "Mode::current" static member variable, which is used to decide where event-handling,
+// updating, and drawing events go:
 #include "Mode.hpp"
 
 //Load.hpp is included because of the call_load_functions() call:

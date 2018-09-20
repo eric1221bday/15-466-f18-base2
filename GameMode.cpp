@@ -22,7 +22,7 @@
 
 Load<MeshBuffer> meshes(LoadTagDefault, []()
 {
-    return new MeshBuffer(data_path("paddle-ball.pnc"));
+    return new MeshBuffer(data_path("indirect-pong.pnc"));
 });
 
 Load<GLuint> meshes_for_vertex_color_program(LoadTagDefault, []()
@@ -30,9 +30,11 @@ Load<GLuint> meshes_for_vertex_color_program(LoadTagDefault, []()
     return new GLuint(meshes->make_vao_for_program(vertex_color_program->program));
 });
 
-Scene::Transform *paddle_transform = nullptr;
-
 Scene::Transform *ball_transform = nullptr;
+
+Scene::Transform *left_turret_transform = nullptr;
+
+Scene::Transform *right_turret_transform = nullptr;
 
 Scene::Camera *camera = nullptr;
 
@@ -40,7 +42,7 @@ Load<Scene> scene(LoadTagDefault, []()
 {
     Scene *ret = new Scene;
     //load transform hierarchy:
-    ret->load(data_path("paddle-ball.scene"), [](Scene &s, Scene::Transform *t, std::string const &m)
+    ret->load(data_path("indirect-pong.scene"), [](Scene &s, Scene::Transform *t, std::string const &m)
     {
         Scene::Object *obj = s.new_object(t);
 
@@ -57,16 +59,21 @@ Load<Scene> scene(LoadTagDefault, []()
 
     //look up paddle and ball transforms:
     for (Scene::Transform *t = ret->first_transform; t != nullptr; t = t->alloc_next) {
-        if (t->name == "Paddle") {
-            if (paddle_transform) throw std::runtime_error("Multiple 'Paddle' transforms in scene.");
-            paddle_transform = t;
+        if (t->name == "Left_Turret") {
+            if (left_turret_transform) throw std::runtime_error("Multiple 'Left_Turret' transforms in scene.");
+            left_turret_transform = t;
+        }
+        if (t->name == "Right_Turret") {
+            if (right_turret_transform) throw std::runtime_error("Multiple 'Right_Turret' transforms in scene.");
+            right_turret_transform = t;
         }
         if (t->name == "Ball") {
             if (ball_transform) throw std::runtime_error("Multiple 'Ball' transforms in scene.");
             ball_transform = t;
         }
     }
-    if (!paddle_transform) throw std::runtime_error("No 'Paddle' transform in scene.");
+    if (!left_turret_transform) throw std::runtime_error("No 'Left_Turret' transform in scene.");
+    if (!right_turret_transform) throw std::runtime_error("No 'Right_Turret' transform in scene.");
     if (!ball_transform) throw std::runtime_error("No 'Ball' transform in scene.");
 
     //look up the camera:
@@ -108,12 +115,11 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 
 void GameMode::update(float elapsed)
 {
-    state.update(elapsed);
 
     if (client.connection) {
         //send game state to server:
-        client.connection.send_raw("s", 1);
-        client.connection.send_raw(&state.paddle.x, sizeof(float));
+//        client.connection.send_raw("s", 1);
+//        client.connection.send_raw(&state.paddle.x, sizeof(float));
     }
 
     client.poll([&](Connection *c, Connection::Event event)
@@ -126,7 +132,43 @@ void GameMode::update(float elapsed)
                     }
                     else {
                         assert(event == Connection::OnRecv);
-                        std::cerr << "Ignoring " << c->recv_buffer.size() << " bytes from server." << std::endl;
+
+                        if (c->recv_buffer[0] == 'i') {
+                            if (c->recv_buffer.size() < 2) {
+                                return; //wait for more data
+                            }
+                            else {
+                                player_id = c->recv_buffer[1];
+                                c->recv_buffer
+                                    .erase(c->recv_buffer.begin(), c->recv_buffer.begin() + 2);
+                                std::cout << "designated as player: " << static_cast<int16_t>(player_id) << std::endl;
+                            }
+                        }
+                        else if (c->recv_buffer[0] == 's') {
+                            if (c->recv_buffer.size() < 1 + sizeof(size_t)) {
+                                return; //wait for more data
+                            }
+                            else {
+                                size_t state_str_length;
+                                memcpy(&state_str_length, c->recv_buffer.data() + 1, sizeof(size_t));
+                                if (c->recv_buffer.size() < 1 + sizeof(size_t) + state_str_length) {
+                                    return;
+                                }
+                                else {
+                                    std::string state_str(c->recv_buffer.data() + 1 + sizeof(size_t),
+                                                          c->recv_buffer.data() + 1 + sizeof(size_t)
+                                                              + state_str_length);
+                                    std::istringstream state_ss(state_str, std::ios_base::binary);
+
+                                    cereal::BinaryInputArchive state_in(state_ss);
+                                    state_in(state);
+                                    c->recv_buffer
+                                        .erase(c->recv_buffer.begin(),
+                                               c->recv_buffer.begin() + 1 + sizeof(size_t) + state_str_length);
+                                }
+
+                            }
+                        }
                         c->recv_buffer.clear();
                     }
                 });
@@ -134,9 +176,6 @@ void GameMode::update(float elapsed)
     //copy game state to scene positions:
     ball_transform->position.x = state.ball.x;
     ball_transform->position.y = state.ball.y;
-
-    paddle_transform->position.x = state.paddle.x;
-    paddle_transform->position.y = state.paddle.y;
 }
 
 void GameMode::draw(glm::uvec2 const &drawable_size)

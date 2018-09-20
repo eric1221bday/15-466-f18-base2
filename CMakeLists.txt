@@ -56,19 +56,19 @@ COMMAND ${CMAKE_COMMAND} -E copy ${KIT_DIR}/out/dist/SDL2.dll ${CMAKE_BINARY_DIR
 
 add_custom_target(CopyAssets
 COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/dist/menu.p ${CMAKE_BINARY_DIR}/
-COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/dist/paddle-ball.pnc ${CMAKE_BINARY_DIR}/
-COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/dist/paddle-ball.scene ${CMAKE_BINARY_DIR}/
+		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/dist/indirect-pong.pnc ${CMAKE_BINARY_DIR}/
+		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/dist/indirect-pong.scene ${CMAKE_BINARY_DIR}/
 )
 
 add_executable(client ${CLIENT_FILES} ${COMMON})
 
-target_include_directories(client PUBLIC ${SDL2_INCLUDE_DIRS} ${PNG_INCLUDE_DIRS} ${GLM_INCLUDE_DIRS})
+target_include_directories(client PUBLIC ${SDL2_INCLUDE_DIRS} ${PNG_INCLUDE_DIRS} ${GLM_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR})
 
 target_link_libraries(client ${OPENGL_LIBRARIES} ${SDL2_LIBRARIES} ${PNG_LIBRARIES})
 
 add_executable(server ${SERVER_FILES} ${COMMON})
 
-target_include_directories(server PUBLIC ${SDL2_INCLUDE_DIRS} ${PNG_INCLUDE_DIRS} ${GLM_INCLUDE_DIRS})
+target_include_directories(server PUBLIC ${SDL2_INCLUDE_DIRS} ${PNG_INCLUDE_DIRS} ${GLM_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR})
 
 target_link_libraries(server ${OPENGL_LIBRARIES} ${SDL2_LIBRARIES} ${PNG_LIBRARIES})
 
