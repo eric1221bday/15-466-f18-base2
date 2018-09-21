@@ -3,7 +3,6 @@
 #include "MenuMode.hpp"
 #include "Load.hpp"
 #include "MeshBuffer.hpp"
-#include "Scene.hpp"
 #include "gl_errors.hpp" //helper for dumpping OpenGL error messages
 #include "read_chunk.hpp" //helper for reading a vector of structures from a file
 #include "data_path.hpp" //helper to get paths relative to executable
@@ -30,17 +29,23 @@ Load<GLuint> meshes_for_vertex_color_program(LoadTagDefault, []()
     return new GLuint(meshes->make_vao_for_program(vertex_color_program->program));
 });
 
-Scene::Transform *ball_transform = nullptr;
+static Scene::Transform *ball_transform = nullptr;
 
-Scene::Transform *left_turret_transform = nullptr;
+static Scene::Transform *left_turret_transform = nullptr;
 
-Scene::Transform *right_turret_transform = nullptr;
+static Scene::Transform *right_turret_transform = nullptr;
 
-Scene::Camera *camera = nullptr;
+static Scene::Camera *camera = nullptr;
+
+static Scene *current_scene = nullptr;
+
+static glm::quat turret_base_rotation;
 
 Load<Scene> scene(LoadTagDefault, []()
 {
     Scene *ret = new Scene;
+    current_scene = ret;
+
     //load transform hierarchy:
     ret->load(data_path("indirect-pong.scene"), [](Scene &s, Scene::Transform *t, std::string const &m)
     {
@@ -61,6 +66,7 @@ Load<Scene> scene(LoadTagDefault, []()
     for (Scene::Transform *t = ret->first_transform; t != nullptr; t = t->alloc_next) {
         if (t->name == "Left_Turret") {
             if (left_turret_transform) throw std::runtime_error("Multiple 'Left_Turret' transforms in scene.");
+            turret_base_rotation = t->rotation;
             left_turret_transform = t;
         }
         if (t->name == "Right_Turret") {
@@ -104,10 +110,20 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
         return false;
     }
 
-    if (evt.type == SDL_MOUSEMOTION) {
-        state.paddle.x = (evt.motion.x - 0.5f * window_size.x) / (0.5f * window_size.x) * Game::FrameWidth;
-        state.paddle.x = std::max(state.paddle.x, -0.5f * Game::FrameWidth + 0.5f * Game::PaddleWidth);
-        state.paddle.x = std::min(state.paddle.x, 0.5f * Game::FrameWidth - 0.5f * Game::PaddleWidth);
+    // handle tracking the state of WSAD for movement control:
+    if (evt.type == SDL_KEYDOWN || evt.type == SDL_KEYUP) {
+        if (evt.key.keysym.scancode == SDL_SCANCODE_W) {
+            current_controls.fire = (evt.type == SDL_KEYDOWN);
+            return true;
+        }
+        if (evt.key.keysym.scancode == SDL_SCANCODE_A) {
+            current_controls.left = (evt.type == SDL_KEYDOWN);
+            return true;
+        }
+        else if (evt.key.keysym.scancode == SDL_SCANCODE_D) {
+            current_controls.right = (evt.type == SDL_KEYDOWN);
+            return true;
+        }
     }
 
     return false;
@@ -116,10 +132,17 @@ bool GameMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 void GameMode::update(float elapsed)
 {
 
-    if (client.connection) {
-        //send game state to server:
-//        client.connection.send_raw("s", 1);
-//        client.connection.send_raw(&state.paddle.x, sizeof(float));
+    if (client.connection && player_id != -1) {
+        //send controls to server:
+        if (current_controls.left || current_controls.right || current_controls.fire) {
+            client.connection.send_raw("c", 1);
+            client.connection.send_raw(&player_id, 1);
+            client.connection.send_raw(&current_controls.left, sizeof(bool));
+            client.connection.send_raw(&current_controls.right, sizeof(bool));
+            client.connection.send_raw(&current_controls.fire, sizeof(bool));
+
+            current_controls = {current_controls.left, current_controls.right, false};
+        }
     }
 
     client.poll([&](Connection *c, Connection::Event event)
@@ -173,9 +196,52 @@ void GameMode::update(float elapsed)
                     }
                 });
 
+    //check if there were destroyed bullets
+    auto bullet_it = bullets.begin();
+
+    while (bullet_it != bullets.end()) {
+        if (state.bullets.find(bullet_it->first) == state.bullets.end()) {
+            current_scene->delete_object(bullet_it->second.first);
+            current_scene->delete_transform(bullet_it->second.second);
+            bullet_it = bullets.erase(bullet_it);
+        }
+        else {
+            bullet_it++;
+        }
+    }
+
+    for (auto const &elem : state.bullets) {
+        if (bullets.find(elem.first) == bullets.end()) {
+            Scene::Transform *t = current_scene->new_transform();
+            t->position = glm::vec3(elem.second.first.x, elem.second.first.y, 0.0f);
+
+            Scene::Object *obj = current_scene->new_object(t);
+
+            obj->program = vertex_color_program->program;
+            obj->program_mvp_mat4 = vertex_color_program->object_to_clip_mat4;
+            obj->program_mv_mat4x3 = vertex_color_program->object_to_light_mat4x3;
+            obj->program_itmv_mat3 = vertex_color_program->normal_to_light_mat3;
+
+            MeshBuffer::Mesh const &mesh = meshes->lookup("Bullet");
+            obj->vao = *meshes_for_vertex_color_program;
+            obj->start = mesh.start;
+            obj->count = mesh.count;
+
+            bullets[elem.first] = {obj, t};
+        }
+        else {
+            bullets.at(elem.first).second->position = glm::vec3(elem.second.first.x, elem.second.first.y, 0.0f);
+        }
+    }
+
     //copy game state to scene positions:
     ball_transform->position.x = state.ball.x;
     ball_transform->position.y = state.ball.y;
+
+    left_turret_transform->rotation =
+        turret_base_rotation * glm::angleAxis(state.left_turret_angle, glm::vec3(0.0f, 1.0f, 0.0f));
+    right_turret_transform->rotation =
+        turret_base_rotation * glm::angleAxis(state.right_turret_angle, glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 void GameMode::draw(glm::uvec2 const &drawable_size)

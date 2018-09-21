@@ -29,6 +29,9 @@
 #include <fstream>
 #include <memory>
 #include <algorithm>
+#include <thread>
+
+using namespace std::chrono_literals;
 
 int main(int argc, char **argv)
 {
@@ -164,7 +167,7 @@ int main(int argc, char **argv)
             if (!Mode::current) break;
         }
 
-        { //(2) call the current mode's "update" function to deal with elapsed time:
+        //(2) call the current mode's "update" function to deal with elapsed time:
             auto current_time = std::chrono::high_resolution_clock::now();
             static auto previous_time = current_time;
             float elapsed = std::chrono::duration<float>(current_time - previous_time).count();
@@ -176,7 +179,6 @@ int main(int argc, char **argv)
 
             Mode::current->update(elapsed);
             if (!Mode::current) break;
-        }
 
         { //(3) call the current mode's "draw" function to produce output:
             //clear the depth+color buffers and set some default state:
@@ -191,6 +193,14 @@ int main(int argc, char **argv)
 
         //Finally, wait until the recently-drawn frame is shown before doing it all again:
         SDL_GL_SwapWindow(window);
+
+        // limit execution rate to 30Hz
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto process_duration = std::chrono::duration<float>(end_time - current_time);
+        if (process_duration.count() < 0.005f) {
+            std::this_thread::sleep_for(5ms - process_duration);
+        }
+        previous_time = current_time;
     }
 
 

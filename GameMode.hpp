@@ -2,6 +2,7 @@
 
 #include "Mode.hpp"
 
+#include "Scene.hpp"
 #include "MeshBuffer.hpp"
 #include "GL.hpp"
 #include "Connection.hpp"
@@ -14,6 +15,7 @@
 
 #include <vector>
 #include <sstream>
+#include <unordered_map>
 
 // The 'GameMode' mode is the main gameplay mode:
 
@@ -35,6 +37,8 @@ struct GameMode: public Mode
 
     //------- game state -------
     Game state;
+    std::unordered_map<uint32_t, std::pair<Scene::Object *, Scene::Transform *>> bullets;
+    controls current_controls;
     int8_t player_id = -1;
 
     //------ networking ------

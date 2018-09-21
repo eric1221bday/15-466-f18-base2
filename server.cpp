@@ -49,29 +49,54 @@ int main(int argc, char **argv)
                                     c->send_raw("i", 1);
                                     c->send_raw(&id, 1);
                                     std::cout << c << ": Sent player id: " << static_cast<int16_t>(id) << std::endl;
-                                    state.game_started = true;
                                 }
                                 else if (server.connections.size() == 2) {
                                     int8_t id = 1;
                                     c->send_raw("i", 1);
                                     c->send_raw(&id, 1);
                                     std::cout << c << ": Sent player id: " << static_cast<int16_t>(id) << std::endl;
+                                    state.game_started = true;
                                 }
                                 else {
                                     std::cout << "this is a two player game!" << std::endl;
                                     c->close();
                                 }
                             }
-//                            else if (c->recv_buffer[0] == 's') {
-//                                if (c->recv_buffer.size() < 1 + sizeof(float)) {
-//                                    return; //wait for more data
-//                                }
-//                                else {
-//                                    memcpy(&state.paddle.x, c->recv_buffer.data() + 1, sizeof(float));
-//                                    c->recv_buffer
-//                                        .erase(c->recv_buffer.begin(), c->recv_buffer.begin() + 1 + sizeof(float));
-//                                }
-//                            }
+                            else if (c->recv_buffer[0] == 'c') {
+                                if (c->recv_buffer.size() < 2 + 3 * sizeof(bool)) {
+                                    return; //wait for more data
+                                }
+                                else {
+                                    if (static_cast<int8_t>(c->recv_buffer[1]) == 0) {
+                                        memcpy(&state.left_turret_controls.left,
+                                               c->recv_buffer.data() + 2,
+                                               sizeof(bool));
+                                        memcpy(&state.left_turret_controls.right,
+                                               c->recv_buffer.data() + 2 + sizeof(bool),
+                                               sizeof(bool));
+                                        memcpy(&state.left_turret_controls.fire,
+                                               c->recv_buffer.data() + 2 + 2 * sizeof(bool),
+                                               sizeof(bool));
+                                    }
+                                    else if (static_cast<int8_t>(c->recv_buffer[1]) == 1) {
+                                        memcpy(&state.right_turret_controls.left,
+                                               c->recv_buffer.data() + 2,
+                                               sizeof(bool));
+                                        memcpy(&state.right_turret_controls.right,
+                                               c->recv_buffer.data() + 2 + sizeof(bool),
+                                               sizeof(bool));
+                                        memcpy(&state.right_turret_controls.fire,
+                                               c->recv_buffer.data() + 2 + 2 * sizeof(bool),
+                                               sizeof(bool));
+                                    }
+                                    else {
+                                        std::cout << "there is a problem, recieved player id: "
+                                                  << static_cast<int16_t>(c->recv_buffer[1]) << std::endl;
+                                    }
+                                    c->recv_buffer
+                                        .erase(c->recv_buffer.begin(), c->recv_buffer.begin() + 2 + 3 * sizeof(bool));
+                                }
+                            }
                         }
                     }, 0.01);
 
@@ -101,16 +126,13 @@ int main(int argc, char **argv)
             if (!state.game_started) {
                 std::cout << "Game not started" << std::endl;
             }
-            else {
-                std::cout << "Current paddle position: " << state.paddle.x << std::endl;
-            }
         }
 
-        // limit execution rate to 30Hz
+        // limit execution rate
         auto end_time = std::chrono::high_resolution_clock::now();
         auto process_duration = std::chrono::duration<float>(end_time - current_time);
-        if (process_duration.count() < 0.033f) {
-            std::this_thread::sleep_for(33ms - process_duration);
+        if (process_duration.count() < 0.005f) {
+            std::this_thread::sleep_for(5ms - process_duration);
         }
         previous_time = current_time;
     }
