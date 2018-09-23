@@ -17,5 +17,4 @@ install:
   - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 90
 
 script:
-- cd 15-466-f18-base2
-- jam
+- jam JAMFILE=Jamfile
