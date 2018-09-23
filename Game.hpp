@@ -31,14 +31,18 @@ struct Game
     controls right_turret_controls;
     std::unordered_map<uint32_t, std::pair<glm::vec2, glm::vec2>> bullets;
     bool game_started = false;
+    uint32_t left_player_points = 0, right_player_points = 0;
 
     void update(float time);
 
-    static constexpr const float FrameWidth = 40.0f;
-    static constexpr const float FrameHeight = 27.0f;
+    static constexpr const float FrameWidth = 38.0f;
+    static constexpr const float FrameHeight = 25.0f;
     static constexpr const float BallRadius = 0.5f;
     static constexpr const float BulletRadius = 0.1f;
-    static constexpr const float RotateSpeed = 0.1f;
+    static constexpr const float BulletSpeed = 15.0f;
+    static constexpr const float RotateSpeed = 0.06f;
+    static constexpr const float BarrelLength = 2.5f;
+    static constexpr const uint32_t PointLimit = 5;
     const glm::vec2 LeftTurretLoc = glm::vec2(-16.77f, 0.0f);
     const glm::vec2 RightTurretLoc = glm::vec2(16.77f, 0.0f);
 

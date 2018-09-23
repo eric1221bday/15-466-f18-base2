@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+trap "kill 0" EXIT
+
+/Users/eric1221bday/sandbox/15-466-f18-base2/dist/server 1200 &
+sleep 1
+/Users/eric1221bday/sandbox/15-466-f18-base2/dist/client localhost 1200 &
+sleep 1
+/Users/eric1221bday/sandbox/15-466-f18-base2/dist/client localhost 1200 &
+
+wait

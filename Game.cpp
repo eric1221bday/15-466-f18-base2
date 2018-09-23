@@ -1,17 +1,29 @@
 #include "Game.hpp"
 
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/projection.hpp>
+
 void Game::update(float time)
 {
+    if (left_player_points >= PointLimit || right_player_points >= PointLimit) {
+        game_started = false;
+    }
 
     auto bullet_it = bullets.begin();
 
     while (bullet_it != bullets.end()) {
+
+        glm::vec2 back_normal = bullet_it->second.first - ball;
 
         bullets.at(bullet_it->first) =
             {bullet_it->second.first + bullet_it->second.second * time, bullet_it->second.second};
         glm::vec2 pos = bullet_it->second.first;
         if (pos.x >= 0.5f * FrameWidth - BulletRadius || pos.x <= -0.5f * FrameWidth + BulletRadius
             || pos.y >= 0.5f * FrameHeight - BulletRadius || pos.y <= -0.5f * FrameHeight + BulletRadius) {
+            bullet_it = bullets.erase(bullet_it);
+        }
+        else if (glm::length(back_normal) <= (BallRadius + BulletRadius)) {
+            ball_velocity += glm::proj(bullet_it->second.second, back_normal) * 0.5f;
             bullet_it = bullets.erase(bullet_it);
         }
         else {
@@ -21,10 +33,14 @@ void Game::update(float time)
 
     ball += ball_velocity * time;
     if (ball.x >= 0.5f * FrameWidth - BallRadius) {
-        ball_velocity.x = -std::abs(ball_velocity.x);
+        left_player_points++;
+        ball = glm::vec2(0.0f, 0.0f);
+        ball_velocity = glm::vec2(0.0f, -2.0f);
     }
     if (ball.x <= -0.5f * FrameWidth + BallRadius) {
-        ball_velocity.x = std::abs(ball_velocity.x);
+        right_player_points++;
+        ball = glm::vec2(0.0f, 0.0f);
+        ball_velocity = glm::vec2(0.0f, -2.0f);
     }
     if (ball.y >= 0.5f * FrameHeight - BallRadius) {
         ball_velocity.y = -std::abs(ball_velocity.y);
@@ -52,8 +68,8 @@ void Game::update(float time)
     if (left_turret_controls.fire && left_fire_timeout > 1.0f) {
         left_fire_timeout = 0.0f;
         bullets[bullet_id] = {
-            LeftTurretLoc + glm::vec2(std::cos(left_turret_angle), std::sin(left_turret_angle)) * 2.5f,
-            glm::vec2(std::cos(left_turret_angle), std::sin(left_turret_angle)) * 6.0f};
+            LeftTurretLoc + glm::vec2(std::cos(left_turret_angle), std::sin(left_turret_angle)) * BarrelLength,
+            glm::vec2(std::cos(left_turret_angle), std::sin(left_turret_angle)) * BulletSpeed};
         bullet_id++;
     }
 
@@ -62,8 +78,8 @@ void Game::update(float time)
     if (right_turret_controls.fire && right_fire_timeout > 1.0f) {
         right_fire_timeout = 0.0f;
         bullets[bullet_id] = {
-            RightTurretLoc + glm::vec2(std::cos(right_turret_angle), std::sin(right_turret_angle)) * 2.5f,
-            glm::vec2(std::cos(right_turret_angle), std::sin(right_turret_angle)) * 6.0f};
+            RightTurretLoc + glm::vec2(std::cos(right_turret_angle), std::sin(right_turret_angle)) * BarrelLength,
+            glm::vec2(std::cos(right_turret_angle), std::sin(right_turret_angle)) * BulletSpeed};
         bullet_id++;
     }
 
