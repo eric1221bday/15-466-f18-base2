@@ -35,6 +35,9 @@ struct GameMode: public Mode
     //draw is called after update:
     virtual void draw(glm::uvec2 const &drawable_size) override;
 
+    void show_win_menu();
+    void show_waiting_menu();
+
     //------- game state -------
     Game state;
     std::unordered_map<uint32_t, std::pair<Scene::Object *, Scene::Transform *>> bullets;

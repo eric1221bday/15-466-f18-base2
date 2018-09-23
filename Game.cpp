@@ -1,12 +1,17 @@
 #include "Game.hpp"
+#include "draw_text.hpp"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/projection.hpp>
 
 void Game::update(float time)
 {
-    if (left_player_points >= PointLimit || right_player_points >= PointLimit) {
-        game_started = false;
+
+    if (left_player_points >= PointLimit) {
+        left_player_won = true;
+    }
+    if (right_player_points >= PointLimit) {
+        right_player_won = true;
     }
 
     auto bullet_it = bullets.begin();

@@ -31,6 +31,8 @@ struct Game
     controls right_turret_controls;
     std::unordered_map<uint32_t, std::pair<glm::vec2, glm::vec2>> bullets;
     bool game_started = false;
+    bool left_player_won = false;
+    bool right_player_won = false;
     uint32_t left_player_points = 0, right_player_points = 0;
 
     void update(float time);
@@ -56,7 +58,11 @@ struct Game
             left_turret_angle,
             right_turret_angle,
             bullets,
-            game_started
+            game_started,
+            left_player_points,
+            right_player_points,
+            left_player_won,
+            right_player_won
         ); // serialize things by passing them to the archive
     }
 };

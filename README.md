@@ -1,11 +1,10 @@
 # Game Information
-(Note: fill in this portion with information about your game.)
 
-Title: (TODO: your game's title)
+Title: Indirect Pong
 
-Author: (TODO: your name)
+Author: Eric Fang
 
-Design Document: [TODO: name of design document](TODO: link to design document)
+Design Document: [indirect pong](http://graphics.cs.cmu.edu/courses/15-466-f18/game2-designs/kkuehner/)
 
 Screen Shot:
 

@@ -17,6 +17,7 @@
 #include <map>
 #include <cstddef>
 #include <random>
+#include <sstream>
 
 
 Load<MeshBuffer> meshes(LoadTagDefault, []()
@@ -196,6 +197,17 @@ void GameMode::update(float elapsed)
                     }
                 });
 
+    if (!state.game_started && Mode::current.get() == this) {
+        show_waiting_menu();
+    }
+    else if (state.game_started && Mode::current.get() != this && !state.left_player_won && !state.right_player_won) {
+        Mode::set_current(shared_from_this());
+    }
+
+    if ((state.left_player_won || state.right_player_won) && Mode::current.get() == this) {
+        show_win_menu();
+    }
+
     //check if there were destroyed bullets
     auto bullet_it = bullets.begin();
 
@@ -269,5 +281,64 @@ void GameMode::draw(glm::uvec2 const &drawable_size)
 
     scene->draw(camera);
 
+    if (Mode::current.get() == this) {
+        glDisable(GL_DEPTH_TEST);
+
+        //draw scores
+        std::stringstream ss;
+        for (int i = 0; i < state.left_player_points; i++) {
+            ss << "*";
+        }
+        std::string message = ss.str();
+        float height = 0.1f;
+        draw_text(message, glm::vec2(-1.5, 0.8f), height,
+                  glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+        ss.str(std::string());
+
+        for (int i = 0; i < state.right_player_points; i++) {
+            ss << "*";
+        }
+        message = ss.str();
+        float width = text_width(message, height);
+        draw_text(message, glm::vec2(1.5 - width, 0.8f), height,
+                  glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+    }
+
     GL_ERRORS();
+}
+
+void GameMode::show_win_menu()
+{
+    std::shared_ptr<MenuMode> menu = std::make_shared<MenuMode>();
+
+    std::shared_ptr<Mode> game = shared_from_this();
+    menu->background = game;
+
+    if (state.left_player_won) {
+        menu->choices.emplace_back("LEFT PLAYER WINS");
+    }
+    else if (state.right_player_won) {
+        menu->choices.emplace_back("RIGHT PLAYER WINS");
+    }
+
+    menu->choices.emplace_back("QUIT", []()
+    { Mode::set_current(nullptr); });
+
+    menu->selected = 1;
+
+    Mode::set_current(menu);
+}
+
+void GameMode::show_waiting_menu()
+{
+    std::shared_ptr<MenuMode> menu = std::make_shared<MenuMode>();
+
+    std::shared_ptr<Mode> game = shared_from_this();
+    menu->background = game;
+
+    menu->choices.emplace_back("WAITING FOR PLAYER");
+
+    menu->selected = 0;
+
+    Mode::set_current(menu);
 }
