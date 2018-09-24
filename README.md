@@ -8,19 +8,28 @@ Design Document: [indirect pong](http://graphics.cs.cmu.edu/courses/15-466-f18/g
 
 Screen Shot:
 
-![Screen Shot](screenshot.png)
+![Screen Shot](screenshot-indirect-pong.png)
 
 How To Play:
 
-TODO: describe the controls and (if needed) goals/strategy.
+* The game requires two players to play.
+* The goal is to move the ball into the opposite wall. Each impact counts as one point for the opposite player.
+* Bullets fired by the turret can impact the ball trajectory.
+* The player who first gains five points wins.
+* A/D key rotates the turret clockwise or counterclockwise.
+* W key fires bullets, only one bullet may be fired a second.
 
 Changes From The Design Document:
 
-TODO: what did you need to add/remove/modify from the original design? Why?
+The original design called for score display by numbers on the top. Due to the fact that the existing text meshes did not include numbers, so I decided to substitute with display by number of asterisks instead.
+
+An attempt was made to create a fuller set of font meshes, but numerous spacing and style related issues cropped up and so I decided to revert to the original meshes.
 
 Good / Bad / Ugly Code:
 
-TODO: provide examples of code you wrote from this project that you think is good (elegant, simple, useful), bad (hack-y, brittle, unreadable), and ugly (particularly inelegant). Provide a sentence or two of justification for the examples.
+* Good: The serialization code using cereal is, due to the library, quite simple to understand and elegant.
+* Bad: The client side control handling code is not very robust and the differences between the firing and turret rotating controls required inelegant flag settings and conditionals.
+* Ugly: The server side network recieving code is quite nasty looking, requiring tons of conditionals to check for full recieve and the underlying system is also prone to being overwhelmed.
 
 # Using This Base Code
 
