@@ -18,7 +18,7 @@ How To Play:
 * The player who first gains five points wins.
 * A/D key rotates the turret clockwise or counterclockwise.
 * W key fires bullets, only one bullet may be fired a second.
-* A convenience launch file `launch_local` has been included which will launch the server and two local clients
+* A convenience launch file `launch_local` has been included for UNIX systems which will launch the server and two local clients. Please launch in project directory.
 
 Changes From The Design Document:
 
