@@ -286,7 +286,7 @@ void GameMode::draw(glm::uvec2 const &drawable_size)
 
         //draw scores
         std::stringstream ss;
-        for (int i = 0; i < state.left_player_points; i++) {
+        for (uint32_t i = 0; i < state.left_player_points; i++) {
             ss << "*";
         }
         std::string message = ss.str();
@@ -295,7 +295,7 @@ void GameMode::draw(glm::uvec2 const &drawable_size)
                   glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
         ss.str(std::string());
 
-        for (int i = 0; i < state.right_player_points; i++) {
+        for (uint32_t i = 0; i < state.right_player_points; i++) {
             ss << "*";
         }
         message = ss.str();
